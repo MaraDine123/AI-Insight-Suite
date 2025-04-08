@@ -22,6 +22,7 @@ def load_lottie_url(url: str):
     r = requests.get(url)
     return r.json() if r.status_code == 200 else None
 
+# -------------------- MAIN APP -------------------- #
 def main():
     try:
         openai.api_key = st.secrets["OPENAI_KEY"]
@@ -80,10 +81,7 @@ def main():
         sentiment_counts = df["sentiment_result"].value_counts().reset_index()
         sentiment_counts.columns = ["sentiment", "count"]
 
-        if df["sentiment_result"].nunique() > 3:
-            fig = px.bar(sentiment_counts, x="sentiment", y="count")
-        else:
-            fig = px.pie(sentiment_counts, names="sentiment", values="count")
+        fig = px.pie(sentiment_counts, names="sentiment", values="count") if df["sentiment_result"].nunique() <= 3 else px.bar(sentiment_counts, x="sentiment", y="count")
         st.plotly_chart(fig, use_container_width=True)
 
         # --------------------- INTENT TAGGING --------------------- #
@@ -121,19 +119,19 @@ Generate a structured insight report that includes:
 7. Any product or experience gaps.
 """
 
-                ai_response = openai.chat.completions.create(
+                ai_response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": analysis_prompt}],
                     temperature=0.5,
                     max_tokens=1000
                 )
-                summary = ai_response.choices[0].message.content
+                summary = ai_response["choices"][0]["message"]["content"]
                 st.session_state["ai_feedback_summary"] = summary
                 st.success("✅ Insight generated successfully!")
 
                 def get_openai_embeddings(texts):
-                    response = openai.embeddings.create(model="text-embedding-ada-002", input=texts)
-                    return [e.embedding for e in response.data]
+                    response = openai.Embedding.create(model="text-embedding-ada-002", input=texts)
+                    return [e["embedding"] for e in response["data"]]
 
                 with st.spinner("📥 Syncing feedback to Pinecone for Q&A..."):
                     vectors = get_openai_embeddings(feedback_list)
@@ -153,15 +151,15 @@ Generate a structured insight report that includes:
             if query:
                 with st.spinner("🔍 Fetching relevant feedback..."):
                     def get_openai_embeddings(texts):
-                        response = openai.embeddings.create(model="text-embedding-ada-002", input=texts)
-                        return [e.embedding for e in response.data]
+                        response = openai.Embedding.create(model="text-embedding-ada-002", input=texts)
+                        return [e["embedding"] for e in response["data"]]
 
                     q_embed = get_openai_embeddings([query])
                     results = index.query(vector=q_embed[0], top_k=5, include_metadata=True)
                     context = "\n".join([match["metadata"]["text"] for match in results["matches"]])
 
                 with st.spinner("💬 Generating response..."):
-                    response = openai.chat.completions.create(
+                    response = openai.ChatCompletion.create(
                         model="gpt-3.5-turbo",
                         messages=[
                             {"role": "system", "content": f"You're a customer feedback expert. Use this context to help answer user questions:\n{context}"},
@@ -170,7 +168,8 @@ Generate a structured insight report that includes:
                         temperature=0.4,
                         max_tokens=700
                     )
-                    st.markdown(response.choices[0].message.content)
+                    st.markdown(response["choices"][0]["message"]["content"])
+
     else:
         st.info("👉 Upload a feedback file (CSV or JSON) to begin.")
 

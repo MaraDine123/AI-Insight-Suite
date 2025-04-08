@@ -9,3 +9,4 @@ streamlit-lottie
 pinecone-client==3.0.0
 python-dotenv
 fpdf
+
