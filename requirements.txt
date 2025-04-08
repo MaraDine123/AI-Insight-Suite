@@ -8,3 +8,4 @@ plotly
 streamlit-lottie
 pinecone-client
 python-dotenv
+fpdf
