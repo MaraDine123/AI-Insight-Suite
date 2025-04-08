@@ -6,6 +6,6 @@ requests
 transformers
 plotly
 streamlit-lottie
-pinecone-client
+pinecone-client==3.0.0
 python-dotenv
 fpdf
