@@ -1,0 +1,10 @@
+streamlit
+pandas
+numpy
+openai
+requests
+transformers
+plotly
+streamlit-lottie
+pinecone-client
+python-dotenv
